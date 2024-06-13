@@ -16,6 +16,7 @@ app.use(express.json());
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vhjeumo.mongodb.net/?retryWrites=true&w=majority`;
+// const uri = "mongodb+srv://shaan:shaan666@cluster0.xplhvcp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -36,6 +37,24 @@ async function run() {
     const usersCollection = client.db("quizApp").collection("users");
     const resultsCollection = client.db("quizApp").collection("quizResults");
 
+    app.get("/questions", async (req, res) => {
+      try {
+        const numQuestions = parseInt(req.query.num) || 10; // Default to 10 questions if not specified
+        const category = req.query.category; // Get the category from query parameters
+
+        const pipeline = [
+          { $match: { category: category } }, // Filter questions by category
+          { $sample: { size: numQuestions } }, // Sample the specified number of questions
+        ];
+
+        const result = await questionCollection.aggregate(pipeline).toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching random questions:", error);
+        res.status(500).send("Error fetching random questions");
+      }
+    });
+
     // get all quizzes
     app.get("/all-questions", async (req, res) => {
       const result = await questionCollection.find().toArray();
@@ -53,6 +72,31 @@ async function run() {
     app.get("/users", async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
+    });
+
+    // get users only'Students'
+    app.get("/users/students", async (req, res) => {
+      try {
+        const result = await usersCollection
+          .find({ role: "Student" })
+          .toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching students:", error);
+        res.status(500).send("Error fetching students");
+      }
+    });
+    // get users only'Teachers'
+    app.get("/users/teachers", async (req, res) => {
+      try {
+        const result = await usersCollection
+          .find({ role: "Teacher" })
+          .toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching students:", error);
+        res.status(500).send("Error fetching students");
+      }
     });
 
     // save user Email and name in DB
@@ -80,60 +124,53 @@ async function run() {
       res.send(result);
     });
 
-     //   make user admin
-     app.patch("/users/admin/:id", async (req, res) => {
+    //   make user admin
+    app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
-          role: "Admin"
+          role: "Admin",
         },
       };
       const result = await usersCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
 
-       // get my quizzes
-       app.get("/my-quizzes", async (req, res) => {
-        let query = {};
-        if (req.query?.email) {
-          query = { createdBy: req.query.email }
-        }
-        const result = await questionCollection.find(query).toArray();
-        res.send(result);
+    // get my quizzes tech
+    app.get("/my-quizzes", async (req, res) => {
+      let query = {};
+      if (req.query?.email) {
+        query = { createdBy: req.query.email };
+      }
+      const result = await questionCollection.find(query).toArray();
+      res.send(result);
     });
 
-     // get quiz results
+    // get quiz results
     app.get("/my-results", async (req, res) => {
       let query = {};
       if (req.query?.email) {
-        query = { email: req.query.email }
+        query = { email: req.query.email };
       }
       const result = await resultsCollection.find(query).toArray();
       res.send(result);
-  });
-      
-     // post quiz results
-     app.post("/add-results", async (req, res) => {
+    });
+
+    // post quiz results
+    app.post("/add-results", async (req, res) => {
       const quizResults = req.body;
       const result = await resultsCollection.insertOne(quizResults);
       res.send(result);
     });
 
-
-     // delete quiz
-     app.delete("/quiz/:id", async(req, res)=> {
+    // delete quiz
+    app.delete("/quiz/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await questionCollection.deleteOne(query);
-      res.send(result)
+      res.send(result);
     });
-
-
-
-
-
-
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
