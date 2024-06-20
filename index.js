@@ -182,14 +182,22 @@ async function run() {
       res.send(result);
     });
 
-    // get quiz results
+    // get quiz results by email
     app.get("/my-results", async (req, res) => {
       let query = {};
       if (req.query?.email) {
         query = { email: req.query.email };
       }
-      const result = await resultsCollection.find(query).toArray();
-      res.send(result);
+      try {
+        const result = await resultsCollection
+          .find(query)
+          .sort({ date: -1 }) // Sort by date in descending order
+          .toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching results:", error);
+        res.status(500).send("Error fetching results");
+      }
     });
 
     // post quiz results
