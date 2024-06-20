@@ -37,23 +37,59 @@ async function run() {
     const usersCollection = client.db("quizApp").collection("users");
     const resultsCollection = client.db("quizApp").collection("quizResults");
 
+
+
+
+
     app.get("/questions", async (req, res) => {
       try {
         const numQuestions = parseInt(req.query.num) || 10; // Default to 10 questions if not specified
         const category = req.query.category; // Get the category from query parameters
-
+    
         const pipeline = [
           { $match: { category: category } }, // Filter questions by category
           { $sample: { size: numQuestions } }, // Sample the specified number of questions
         ];
-
-        const result = await questionCollection.aggregate(pipeline).toArray();
-        res.send(result);
+    
+        let questions = await questionCollection.aggregate(pipeline).toArray();
+    
+        // Randomize options for each question
+        questions = questions.map(question => {
+          question.options = question.options.sort(() => Math.random() - 0.5);
+          return question;
+        });
+    
+        res.send(questions);
       } catch (error) {
         console.error("Error fetching random questions:", error);
         res.status(500).send("Error fetching random questions");
       }
     });
+    
+
+
+
+
+    // app.get("/questions", async (req, res) => {
+    //   try {
+    //     const numQuestions = parseInt(req.query.num) || 10; // Default to 10 questions if not specified
+    //     const category = req.query.category; // Get the category from query parameters
+
+    //     const pipeline = [
+    //       { $match: { category: category } }, // Filter questions by category
+    //       { $sample: { size: numQuestions } }, // Sample the specified number of questions
+    //     ];
+
+    //     const result = await questionCollection.aggregate(pipeline).toArray();
+    //     res.send(result);
+    //   } catch (error) {
+    //     console.error("Error fetching random questions:", error);
+    //     res.status(500).send("Error fetching random questions");
+    //   }
+    // });
+
+
+
 
     // get all quizzes
     app.get("/all-questions", async (req, res) => {
