@@ -182,6 +182,20 @@ async function run() {
       res.send(result);
     });
 
+    // get all quiz results
+    app.get("/all-exam-results", async(req, res)=> {
+      const result = await resultsCollection.find().toArray();
+      res.send(result);
+    })
+
+    // reset exam
+    app.delete("/reset-exam/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await resultsCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // get quiz results by email
     app.get("/my-results", async (req, res) => {
       let query = {};
