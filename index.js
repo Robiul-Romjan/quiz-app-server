@@ -183,10 +183,25 @@ async function run() {
     });
 
     // get all quiz results
-    app.get("/all-exam-results", async(req, res)=> {
-      const result = await resultsCollection.find().toArray();
-      res.send(result);
-    })
+    // get all quiz results or search by id or name
+    app.get("/all-exam-results", async (req, res) => {
+      const { id, name } = req.query;
+
+      let query = {};
+
+      if (id) {
+        query.id = id;
+      } else if (name) {
+        query.name = new RegExp(name, "i"); // case-insensitive search
+      }
+
+      try {
+        const result = await resultsCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: "Error fetching exam results", error });
+      }
+    });
 
     // reset exam
     app.delete("/reset-exam/:id", async (req, res) => {
